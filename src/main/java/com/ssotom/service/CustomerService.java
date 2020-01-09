@@ -9,14 +9,14 @@ import com.ssotom.model.Customer;
 import com.ssotom.repository.ICustomerRepository;
 
 @Service
-public class CustomerService {
+public class CustomerService implements ICustomerService{
 	
 	@Autowired
 	private ICustomerRepository customerRepository;
 
+	@Override
 	public List<Customer> findAll() {
 		return customerRepository.findAll();
 	}
-	
 
 }
