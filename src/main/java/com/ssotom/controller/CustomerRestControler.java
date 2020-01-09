@@ -11,13 +11,13 @@ import com.ssotom.model.Customer;
 import com.ssotom.service.ICustomerService;
 
 @RestController
-@RequestMapping("/api/customer")
+@RequestMapping("/api/customers")
 public class CustomerRestControler {
 	
 	@Autowired
 	private ICustomerService customerService;
 	
-	@GetMapping("/")
+	@GetMapping()
 	public List<Customer> index() {
 		return customerService.findAll();
 	}
