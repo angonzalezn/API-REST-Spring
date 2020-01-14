@@ -14,5 +14,7 @@ public interface ICustomerService {
 	public Customer save(Customer customer);
 	
 	public void delete(Long id);
+	
+	public boolean isValidEmail(Customer customer);
 
 }

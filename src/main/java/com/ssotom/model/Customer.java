@@ -11,6 +11,8 @@ import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 
 @Entity
 @Table(name="customers")
@@ -20,13 +22,15 @@ public class Customer {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	@Column(nullable = false)
+	@NotBlank
 	private String name;
 	
-	@Column(nullable = false)
+	@NotBlank
 	private String lastname;
 	
-	@Column(nullable = false, unique = true)
+	@NotBlank
+	@Email
+	@Column(unique = true)
 	private String email;
 	
 	@Column(name="created_at")
