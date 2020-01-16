@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
 import com.ssotom.model.Customer;
 import com.ssotom.repository.ICustomerRepository;
 
@@ -17,6 +20,11 @@ public class CustomerService implements ICustomerService{
 	@Override
 	public List<Customer> findAll() {
 		return customerRepository.findAllByOrderByIdAsc();
+	}
+	
+	@Override
+	public Page<Customer> findAll(Pageable pageable) {
+		return customerRepository.findAllByOrderByIdAsc(pageable);
 	}
 
 	@Override

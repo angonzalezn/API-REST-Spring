@@ -8,6 +8,8 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -41,6 +43,11 @@ public class CustomerRestControler {
 		return customerService.findAll();
 	}
 	
+	@GetMapping("p/{page}")
+	public Page<Customer> index(@PathVariable Integer page) {
+		return customerService.findAll(PageRequest.of(page, 4));
+	}
+	
 	@GetMapping("/{id}")
 	public ResponseEntity<?> show(@PathVariable Long id) {
 		Optional<Customer> customer = customerService.findById(id);
@@ -53,7 +60,7 @@ public class CustomerRestControler {
 	@PostMapping()
 	public ResponseEntity<?> create(@Valid @RequestBody Customer customer, BindingResult result) {
 		if(!customerService.isValidEmail(customer)) {
-			FieldError error = new FieldError("customer", "email", "email in use");
+			FieldError error = new FieldError("customer", "email", customer.getEmail() + " in use");
 			result.addError(error);
 		}
 		if(result.hasErrors()) {
