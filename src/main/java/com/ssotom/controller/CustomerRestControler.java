@@ -1,15 +1,25 @@
 package com.ssotom.controller;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -22,8 +32,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ssotom.model.Customer;
 import com.ssotom.response.ErrorResponse;
@@ -43,9 +54,9 @@ public class CustomerRestControler {
 		return customerService.findAll();
 	}
 	
-	@GetMapping("p/{page}")
+	@GetMapping("/p/{page}")
 	public Page<Customer> index(@PathVariable Integer page) {
-		return customerService.findAll(PageRequest.of(page, 4));
+		return customerService.findAll(PageRequest.of(page, 10));
 	}
 	
 	@GetMapping("/{id}")
@@ -70,8 +81,7 @@ public class CustomerRestControler {
 			Customer newCustomer = customerService.save(customer);
 			return new ResponseEntity<Customer>(newCustomer, HttpStatus.CREATED);
 		} catch (DataAccessException e) {
-			return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Fatal error", 
-					e.getMostSpecificCause().getLocalizedMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+			return returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
 		}	
 	}
 	
@@ -83,21 +93,92 @@ public class CustomerRestControler {
 	@DeleteMapping(value = "/{id}")
 	public ResponseEntity<?> delete(@PathVariable("id") Long id) {
 		try {
+			Optional<Customer> customer = customerService.findById(id);
+			customer.ifPresent(this::deletePicture);
 			customerService.delete(id);
 			return new ResponseEntity<ResponseMessage>(new ResponseMessage("Customer removed with success"), HttpStatus.OK);
 		} catch (DataAccessException e) {
-			return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Fatal error", 
-					e.getMostSpecificCause().getLocalizedMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+			return returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
+
 		}	
 	}
 	
-	public ResponseEntity<?> returnError(BindingResult result) { 
+	@PostMapping("/upload")
+	public ResponseEntity<?> uploadPicture(@RequestParam("file") MultipartFile file, @RequestParam("id") Long id) {
+		if(!file.isEmpty()) {
+			Optional<Customer> customer = customerService.findById(id);
+			if(customer.isPresent()) {
+				Customer cus = customer.get();
+				String originalFilename = file.getOriginalFilename();
+				String fileName = id + "_" + UUID.randomUUID().toString() + originalFilename.substring(originalFilename.lastIndexOf("."));
+				Path filePath = getFilePath(fileName);
+				
+				try {
+					Files.copy(file.getInputStream(), filePath);
+				} catch (IOException e) {
+					return returnInternalServerError(e.getMessage());
+				}
+				
+				deletePicture(cus);
+				cus.setPicture(fileName);
+				customerService.save(cus);
+				return new ResponseEntity<ResponseMessage>(new ResponseMessage("Picture uploaded with success"), HttpStatus.OK);
+			} else {
+				return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.NOT_FOUND, "Customer not found", 
+						"Customer not found with id = " + id), HttpStatus.NOT_FOUND);
+			}			
+		} else {
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Missing parameter", 
+					"The file parameter is necessary"), HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	@GetMapping("/upload/picture/{fileName:.+}")
+	public ResponseEntity<?> showPicture(@PathVariable String fileName) {
+		Path filePath = getFilePath(fileName);	
+		try {
+			Resource resource = new UrlResource(filePath.toUri());
+			if(resource.exists() && resource.isReadable()) {
+				HttpHeaders header = new HttpHeaders();
+				header.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"");
+				return new ResponseEntity<Resource>(resource, header, HttpStatus.OK);
+			} else {
+				return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.NOT_FOUND, "Picture not found", 
+						"Picture not found with name = " + fileName), HttpStatus.NOT_FOUND);
+			}
+		} catch (MalformedURLException e) {
+			return returnInternalServerError(e.getMessage());
+		}
+	}
+	
+	private Path getFilePath(String fileName) {
+		return Paths.get("uploads" + File.separator + "customers" + File.separator + "pictures")
+				.resolve(fileName).toAbsolutePath();	
+	}
+	
+	private void deletePicture(Customer customer) {
+		String oldFileName = customer.getPicture();
+		if(oldFileName !=null && oldFileName.length() > 0) {
+			Path oldFilePath = getFilePath(oldFileName);	
+			File oldFile = oldFilePath.toFile();
+			if(oldFile.exists() && oldFile.canRead()) {
+				oldFile.delete();
+			}
+		}
+	}
+	
+	private ResponseEntity<?> returnError(BindingResult result) { 
 		List<String> errors = new LinkedList<String>();
 		for (FieldError error : result.getFieldErrors()) {
 	        errors.add(error.getField() + ": " + error.getDefaultMessage());
 	    }
 		return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.BAD_REQUEST, "The request has some errors", 
 				errors), HttpStatus.BAD_REQUEST);
+	}
+	
+	private ResponseEntity<?> returnInternalServerError(String message) {
+		return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Fatal error", 
+				message), HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	
 }

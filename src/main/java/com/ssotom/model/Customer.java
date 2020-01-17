@@ -37,6 +37,8 @@ public class Customer {
 	@Temporal(TemporalType.DATE)
 	private Date createdAt;
 	
+	private String picture;
+	
 	@PrePersist
 	public void prePersist() {
 		createdAt = new Date();
@@ -72,6 +74,15 @@ public class Customer {
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+	
+
+	public String getPicture() {
+		return picture;
+	}
+
+	public void setPicture(String picture) {
+		this.picture = picture;
 	}
 
 	public Date getCreatedAt() {
