@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.ssotom.model.Customer;
+import com.ssotom.model.Region;
 
 public interface ICustomerService {
 	
@@ -21,5 +22,7 @@ public interface ICustomerService {
 	public void delete(Long id);
 	
 	public boolean isValidEmail(Customer customer);
+	
+	public List<Region> findAllRegions();
 
 }

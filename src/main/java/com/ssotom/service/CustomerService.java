@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.ssotom.model.Customer;
+import com.ssotom.model.Region;
 import com.ssotom.repository.ICustomerRepository;
 
 @Service
@@ -47,6 +48,11 @@ public class CustomerService implements ICustomerService{
 		Optional<Customer> oldCustomer = customerRepository.findByEmail(customer.getEmail());
 		return oldCustomer.map(cus -> cus.getId() == customer.getId())
 				 .orElse(true);	
+	}
+
+	@Override
+	public List<Region> findAllRegions() {
+		return customerRepository.findAllRegions();
 	}
 
 }

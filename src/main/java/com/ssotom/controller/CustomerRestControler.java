@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ssotom.model.Customer;
+import com.ssotom.model.Region;
 import com.ssotom.response.ErrorResponse;
 import com.ssotom.response.ResponseMessage;
 import com.ssotom.service.ICustomerService;
@@ -156,6 +157,11 @@ public class CustomerRestControler {
 			Path oldFilePath = fileService.getPath(PICTURE_PATH, oldFileName);
 			fileService.delete(oldFilePath);
 		}
+	}
+	
+	@GetMapping("/regions")
+	public List<Region> getRegions() {
+		return customerService.findAllRegions();
 	}
 	
 	private ResponseEntity<?> returnError(BindingResult result) { 
