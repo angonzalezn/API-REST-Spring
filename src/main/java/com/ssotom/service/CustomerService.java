@@ -44,10 +44,8 @@ public class CustomerService implements ICustomerService{
 	}
 
 	@Override
-	public boolean isValidEmail(Customer customer) {
-		Optional<Customer> oldCustomer = customerRepository.findByEmail(customer.getEmail());
-		return oldCustomer.map(cus -> cus.getId() == customer.getId())
-				 .orElse(true);	
+	public Boolean existsByEmail(String email) {
+		return customerRepository.existsByEmail(email);
 	}
 
 	@Override

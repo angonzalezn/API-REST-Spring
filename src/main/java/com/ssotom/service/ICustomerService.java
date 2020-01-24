@@ -21,7 +21,7 @@ public interface ICustomerService {
 	
 	public void delete(Long id);
 	
-	public boolean isValidEmail(Customer customer);
+	public Boolean existsByEmail(String email);
 	
 	public List<Region> findAllRegions();
 

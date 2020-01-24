@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ssotom.model.Customer;
 import com.ssotom.model.Region;
 import com.ssotom.response.ErrorResponse;
-import com.ssotom.response.ResponseMessage;
+import com.ssotom.response.MessageResponse;
 import com.ssotom.service.ICustomerService;
 import com.ssotom.service.IFileService;
 
@@ -73,18 +72,18 @@ public class CustomerRestControler {
 	
 	@PostMapping()
 	public ResponseEntity<?> create(@Valid @RequestBody Customer customer, BindingResult result) {
-		if(!customerService.isValidEmail(customer)) {
+		if(customerService.existsByEmail(customer.getEmail())) {
 			FieldError error = new FieldError("customer", "email", customer.getEmail() + " in use");
 			result.addError(error);
 		}
 		if(result.hasErrors()) {
-			return returnError(result);
+			return ErrorResponse.returnError(result);
 		}
 		try {
 			Customer newCustomer = customerService.save(customer);
 			return new ResponseEntity<Customer>(newCustomer, HttpStatus.CREATED);
 		} catch (DataAccessException e) {
-			return returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
+			return ErrorResponse.returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
 		}	
 	}
 	
@@ -99,9 +98,9 @@ public class CustomerRestControler {
 			Optional<Customer> customer = customerService.findById(id);
 			customer.ifPresent(this::deletePicture);
 			customerService.delete(id);
-			return new ResponseEntity<ResponseMessage>(new ResponseMessage("Customer removed with success"), HttpStatus.OK);
+			return new ResponseEntity<MessageResponse>(new MessageResponse("Customer removed with success"), HttpStatus.OK);
 		} catch (DataAccessException e) {
-			return returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
+			return ErrorResponse.returnInternalServerError(e.getMostSpecificCause().getLocalizedMessage());
 
 		}	
 	}
@@ -117,7 +116,7 @@ public class CustomerRestControler {
 				try {
 					fileName = fileService.upload(file, PICTURE_PATH, ""+id);
 				} catch (IOException e) {
-					return returnInternalServerError(e.getMessage());
+					return ErrorResponse.returnInternalServerError(e.getMessage());
 				}
 				
 				deletePicture(cus);
@@ -147,7 +146,7 @@ public class CustomerRestControler {
 			header.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"");
 			return new ResponseEntity<Resource>(resource, header, HttpStatus.OK);
 		} catch (MalformedURLException e) {
-			return returnInternalServerError(e.getMessage());
+			return ErrorResponse.returnInternalServerError(e.getMessage());
 		}
 	}
 		
@@ -164,18 +163,6 @@ public class CustomerRestControler {
 		return customerService.findAllRegions();
 	}
 	
-	private ResponseEntity<?> returnError(BindingResult result) { 
-		List<String> errors = new LinkedList<String>();
-		for (FieldError error : result.getFieldErrors()) {
-	        errors.add(error.getField() + ": " + error.getDefaultMessage());
-	    }
-		return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.BAD_REQUEST, "The request has some errors", 
-				errors), HttpStatus.BAD_REQUEST);
-	}
 	
-	private ResponseEntity<?> returnInternalServerError(String message) {
-		return new ResponseEntity<ErrorResponse>(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Fatal error", 
-				message), HttpStatus.INTERNAL_SERVER_ERROR);
-	}
 	
 }

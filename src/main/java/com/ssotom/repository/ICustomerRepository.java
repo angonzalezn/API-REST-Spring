@@ -1,7 +1,6 @@
 package com.ssotom.repository;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +16,7 @@ public interface ICustomerRepository extends JpaRepository<Customer, Long> {
 	 
 	 public Page<Customer> findAllByOrderByIdAsc(Pageable pePageable);
 	 
-	 public Optional<Customer> findByEmail(String email);
+	 public Boolean existsByEmail(String email);
 	 
 	 @Query("from Region")
 	 public List<Region> findAllRegions();
